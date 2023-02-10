@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import functions as fn
-import data 
+import data  
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import scipy.optimize as opt
+from scipy.optimize import minimize
 
 tickers = pd.DataFrame({'tickers':(np.concatenate((data.NAFTRAC_20210129.iloc[:, 0],
                           data.NAFTRAC_20210226.iloc[:, 0],
@@ -91,15 +92,68 @@ for i in range(len(pasiva)-1):
     pasiva['Rendimiento'][i+1]=(pasiva['Valor portafolio'][i+1]/pasiva['Valor portafolio'][i])-1
     pasiva['Rendimiento acumulado'][i+1]=sum(pasiva['Rendimiento'].iloc[0:i+2,])
 
-x = pasiva['Date']
-y = pasiva['Valor portafolio']
+#---------------------------------------------------------------------------------------------------------------------------------------------------#
 
-plt.plot(x,y)
-plt.xlabel('Date')
-plt.ylabel('Portfolio Value')
-plt.figure(figsize=(6.4,4.8)) 
-plt.show() 
+#Creación de portafolio EMV
+    
+annual_ret_summ = pd.DataFrame(columns=[nuevo['Ticker'].to_list()], index=['Media', 'Volatilidad'])
+annual_ret_summ.loc['Media'] = fn.prices_daily(tabla_temporal['Ticker'].to_list(),'2021-01-31','2022-01-31')[0].values
+annual_ret_summ.loc['Volatilidad'] = fn.prices_daily(tabla_temporal['Ticker'].to_list(),'2021-01-31','2022-01-31')[1].values
 
+corr = fn.prices_daily(tabla_temporal['Ticker'].to_list(),'2021-01-31','2022-01-31')[2].corr()
 
+# 1. Sigma: matriz de varianza-covarianza Sigma = S.dot(corr).dot(S)
+S=np.diag(annual_ret_summ.loc['Volatilidad'].values)
+Sigma = S.dot(corr).dot(S)
 
+# 2. Eind: rendimientos esperados activos individuales
+Eind=annual_ret_summ.loc['Media'].values
+
+# Número de activos
+n=len(Eind)
+# Dato inicial
+w0=np.ones((n,))/n
+# Cotas de las variables
+bnds=((0,1),)*n
+# Restricciones
+cons={'type':'eq','fun':lambda w:w.sum()-1}
+
+# Portafolio de mínima varianza
+minvar=minimize(fun=fn.varianza,
+               x0=w0,
+               args=(Sigma,),
+               bounds=bnds,
+               constraints=cons,
+               tol=1e-10)
+
+w_minvar=minvar.x
+
+rf=0.0429
+E_minvar=Eind.T.dot(w_minvar)
+s_minvar=(w_minvar.T.dot(Sigma).dot(w_minvar))**.5
+RS_minvar=(E_minvar-rf)/s_minvar
+
+# Número de activos
+n=len(Eind)
+# Dato inicial
+w0=np.ones((n,))/n
+# Cotas de las variables
+bnds=((0,1),)*n
+# Restricciones
+cons={'type':'eq','fun':lambda w:w.sum()-1}
+
+# Portafolio EMV
+EMV=minimize(fun=fn.menos_RS,
+            x0=w0,
+            args=(Eind,Sigma,rf),
+            bounds=bnds,
+            constraints=cons,
+            tol=1e-10)
+
+w_EMV=np.round(EMV.x,4)
+
+ponderaciones_iniciales_Activo = pd.DataFrame(w_EMV,index=nuevo['Ticker'].to_list())
+ponderaciones_iniciales_Activo.rename(columns={0:'Ticker'}, inplace=True)
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------#
 

@@ -29,3 +29,28 @@ def prices(tickers,start_date, end_date, fechas_consulta):
     final.drop(['Coincidencia'], axis=1, inplace=True)
     
     return final
+
+
+def prices_daily(tickers, start_date=None, end_date=None):
+    
+    matriz = yf.download(tickers, start = start_date, end = end_date)['Close']
+    log_ret = np.log(matriz/matriz.shift()).dropna()
+    rend=log_ret.mean()*252
+    desv=log_ret.std()*(252**.5)
+    
+    return rend,desv,log_ret
+
+# Función objetivo
+def varianza(w,Sigma):
+    return w.T.dot(Sigma).dot(w)
+
+# Función objetivo
+def menos_RS(w,Eind,Sigma,rf):
+    Ep=Eind.T.dot(w)
+    sp=(w.T.dot(Sigma).dot(w))**.5
+    RS=(Ep-rf)/sp
+    return -RS
+
+    
+
+

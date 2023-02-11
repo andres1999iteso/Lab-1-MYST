@@ -152,8 +152,86 @@ EMV=minimize(fun=fn.menos_RS,
 
 w_EMV=np.round(EMV.x,4)
 
-ponderaciones_iniciales_Activo = pd.DataFrame(w_EMV,index=nuevo['Ticker'].to_list())
-ponderaciones_iniciales_Activo.rename(columns={0:'Ticker'}, inplace=True)
+ponderaciones_iniciales_Activo_minimize = pd.DataFrame(w_EMV,index=nuevo['Ticker'].to_list())
+ponderaciones_iniciales_Activo_minimize.rename(columns={0:'Ticker'}, inplace=True)
 
 #---------------------------------------------------------------------------------------------------------------------------------------------------#
+#Ponderaciones con montecarlo
+
+# Matriz de covarianza
+Sigma=fn.prices_daily(tabla_temporal['Ticker'].to_list(),'2021-01-31','2022-01-31')[2].cov()
+
+# Matriz de correlación
+R=corr
+
+# Definimos el número de portafolios que simularemos, y la cantidad de activos que tenemos
+n_port=1000000
+n_act=31
+
+# Generar una matriz de pesos de n_portafolios x n_activos,
+# tal que cada fila sume uno (recordar restricción)
+W=np.random.dirichlet(alpha=np.ones(n_act),size=n_port)
+
+# Rendimientos y volatilidad de cada portafolios
+Eind=annual_ret_summ.loc['Media'].values
+Erp=W.dot(Eind)
+
+#Volatilidad de los 1000000 portafolios
+sp=np.zeros(n_port)
+for i in range (n_port):
+    w=W[i,:]
+    sp[i]=(w.T.dot(Sigma).dot(w))**.5
+    
+# Radio de Sharpe
+RS = (Erp - rf)/sp
+
+# Data frame de resultados
+portafolios=pd.DataFrame(data={tabla_temporal['Ticker'][0]:W[:,0],
+                               tabla_temporal['Ticker'][1]:W[:,1],
+                               tabla_temporal['Ticker'][2]:W[:,2],
+                               tabla_temporal['Ticker'][3]:W[:,3],
+                               tabla_temporal['Ticker'][4]:W[:,4],
+                               tabla_temporal['Ticker'][5]:W[:,5],
+                               tabla_temporal['Ticker'][6]:W[:,6],
+                               tabla_temporal['Ticker'][7]:W[:,7],
+                               tabla_temporal['Ticker'][8]:W[:,8],
+                               tabla_temporal['Ticker'][9]:W[:,9],
+                               tabla_temporal['Ticker'][10]:W[:,10],
+                               tabla_temporal['Ticker'][11]:W[:,11],
+                               tabla_temporal['Ticker'][12]:W[:,12],
+                               tabla_temporal['Ticker'][13]:W[:,13],
+                               tabla_temporal['Ticker'][14]:W[:,14],
+                               tabla_temporal['Ticker'][15]:W[:,15],
+                               tabla_temporal['Ticker'][16]:W[:,16],
+                               tabla_temporal['Ticker'][17]:W[:,17],
+                               tabla_temporal['Ticker'][18]:W[:,18],
+                               tabla_temporal['Ticker'][19]:W[:,19],
+                               tabla_temporal['Ticker'][20]:W[:,20],
+                               tabla_temporal['Ticker'][21]:W[:,21],
+                               tabla_temporal['Ticker'][22]:W[:,22],
+                               tabla_temporal['Ticker'][23]:W[:,23],
+                               tabla_temporal['Ticker'][24]:W[:,24],
+                               tabla_temporal['Ticker'][25]:W[:,25],
+                               tabla_temporal['Ticker'][26]:W[:,26],
+                               tabla_temporal['Ticker'][27]:W[:,27],
+                               tabla_temporal['Ticker'][28]:W[:,28],
+                               tabla_temporal['Ticker'][29]:W[:,29],
+                               tabla_temporal['Ticker'][30]:W[:,30],
+                               'Media':Erp,
+                               'Vol':sp,
+                               'RS':RS})
+
+# Portafolio EMV
+port_EMV_montecarlo = np.round(portafolios[portafolios['RS']==portafolios['RS'].max()],6)
+ponderaciones_montecarlo = port_EMV_montecarlo.iloc[:,:31]
+
+
+
+
+
+
+
+
+
+
 

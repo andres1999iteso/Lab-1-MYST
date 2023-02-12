@@ -172,6 +172,7 @@ n_act=31
 
 # Generar una matriz de pesos de n_portafolios x n_activos,
 # tal que cada fila sume uno (recordar restricción)
+np.random.seed(1)
 W=np.random.dirichlet(alpha=np.ones(n_act),size=n_port)
 
 # Rendimientos y volatilidad de cada portafolios
@@ -182,7 +183,7 @@ Erp=W.dot(Eind)
 sp=np.zeros(n_port)
 for i in range (n_port):
     w=W[i,:]
-    sp[i]=(w.T.dot(Sigma).dot(w))**.5
+    sp[i]=(w.T.dot(Sigma).dot(w))**.5 
     
 # Radio de Sharpe
 RS = (Erp - rf)/sp
@@ -382,10 +383,3 @@ df_medidas['Inv pasiva'][1] = df_pasiva["Rendimiento acumulado"][24]
 
 df_medidas['Inv activa'][2] = (df_activa["Rendimiento"].iloc[11:].mean() - (rf/12)) / df_activa["Rendimiento"].iloc[11:].std()
 df_medidas['Inv pasiva'][2] = (df_pasiva["Rendimiento"].mean() - (rf/12)) / df_pasiva["Rendimiento"].std()
-
- 
-
-
-
-
-

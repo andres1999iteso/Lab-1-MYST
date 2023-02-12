@@ -51,6 +51,5 @@ def menos_RS(w,Eind,Sigma,rf):
     RS=(Ep-rf)/sp
     return -RS
 
-    
 
 

@@ -44,4 +44,3 @@ fechas=pd.to_datetime(["2021-01-29","2021-02-26","2021-03-31","2021-04-30","2021
 precios = fn.prices(tickers_fin1, "2021-01-29" , "2023-01-26" , fechas)
 precios.to_csv('../files/precios.csv')
 
-
